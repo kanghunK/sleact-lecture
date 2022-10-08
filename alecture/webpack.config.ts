@@ -8,7 +8,7 @@ interface Configuration extends WebpackConfiguration {
   devServer?: WebpackDevServerConfiguration;
 }
 
-import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';      // ts와 웹팩을 동시에 돌아가게 해줌
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -38,9 +38,9 @@ const config: Configuration = {
         options: {
           presets: [
             [
-              '@babel/preset-env',
+              '@babel/preset-env',                  // 브라우저에 맞게 코드의 호환성을 맞춰준다.
               {
-                targets: { browsers: ['IE 10'] },
+                targets: { browsers: ['last 2 chrome versions', 'IE 10'] },
                 debug: isDevelopment,
               },
             ],
@@ -80,12 +80,12 @@ const config: Configuration = {
     port: 3090,
     devMiddleware: { publicPath: '/dist/' },
     static: { directory: path.resolve(__dirname) },
-    proxy: {
-      '/api/': {
-        target: 'http://localhost:3095',
-        changeOrigin: true,
+      proxy: {
+        '/api/': {
+          target: 'http://localhost:3095',
+          changeOrigin: true,
+        },
       },
-    },
   },
 };
 

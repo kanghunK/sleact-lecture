@@ -1,30 +1,30 @@
 {
-  "compilerOptions": {
-    "esModuleInterop": true,
-    "sourceMap": true,
-    "lib": ["ES2020", "DOM"],
-    "jsx": "react",
-    "module": "esnext",
-    "moduleResolution": "Node",
-    "target": "es5",
-    "strict": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@hooks/*": ["hooks/*"],
-      "@components/*": ["components/*"],
-      "@layouts/*": ["layouts/*"],
-      "@pages/*": ["pages/*"],
-      "@utils/*": ["utils/*"],
-      "@typings/*": ["typings/*"]
-    }
-  },
-  "ts-node": {
     "compilerOptions": {
-      "module": "commonjs",
+      "esModuleInterop": true,
+      "sourceMap": true,
+      "lib": ["ES2020", "DOM"],
+      "jsx": "react",
+      "module": "esnext",
       "moduleResolution": "Node",
       "target": "es5",
-      "esModuleInterop": true
+      "strict": true,
+      "resolveJsonModule": true,
+      "baseUrl": ".",
+      "paths": {
+        "@hooks/*": ["hooks/*"],
+        "@components/*": ["components/*"],
+        "@layouts/*": ["layouts/*"],
+        "@pages/*": ["pages/*"],
+        "@utils/*": ["utils/*"],
+        "@typings/*": ["typings/*"]
+      }
+    },
+    "ts-node": {                        // webpack은 기본적으로 ts를 인식 못하기 때문에 ts-node를 설정해야 한다.    
+      "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "Node",
+        "target": "es5",
+        "esModuleInterop": true
+      }
     }
   }
-}
