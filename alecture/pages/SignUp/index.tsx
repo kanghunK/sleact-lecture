@@ -3,13 +3,14 @@ import { Button, Error, Form, Header, Input, Label, LinkContainer, Success } fro
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
 import React, { useCallback, useState } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Redirect, Link } from 'react-router-dom';
 import useSWR from 'swr';
 
 const SignUp = () => {
-  const { data: userData } = useSWR('/api/users', fetcher);
+  const { data, error, revalidate } = useSWR('/api/users', fetcher);
+
   const [email, onChangeEmail] = useInput('');
-  const [nickname, onChangeNickname] = useInput('');``
+  const [nickname, onChangeNickname] = useInput('');
   const [password, , setPassword] = useInput('');
   const [passwordCheck, , setPasswordCheck] = useInput('');
   const [mismatchError, setMismatchError] = useState(false);
@@ -62,8 +63,13 @@ const SignUp = () => {
     [mismatchError, nickname, email, password]
   );
 
-  if (userData) {
-    return <Redirect to="/workspace/sleact" />;
+  // 로딩중 화면
+  if (data === undefined) {
+    return <div>로딩중...</div>
+  }
+
+  if (data) {
+    return <Redirect to="/workspace/sleact/channel/일반" />
   }
 
   return (
@@ -108,7 +114,8 @@ const SignUp = () => {
       </Form>
       <LinkContainer>
         이미 회원이신가요?&nbsp;
-        <a href="/login">로그인 하러가기</a>
+        {/* 싱글 페이지 유지되면서 화면만 바꿔줌 */}
+        <Link to="/login">로그인 하러가기</Link>
       </LinkContainer>
     </div>
   );
