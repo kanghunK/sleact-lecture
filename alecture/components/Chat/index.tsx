@@ -1,18 +1,19 @@
 import React, { VFC, memo, useMemo } from 'react';
 import { ChatWrapper } from './styles';
 import gravatar from 'gravatar';
-import { IDM } from '@typings/db';
+import { IChat, IDM } from '@typings/db';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router';
 import regexifystring from 'regexify-string';
 import { Link } from 'react-router-dom';
 
 interface Props {
-  data: IDM;
+  data: (IDM | IChat);
 }
 const Chat: VFC<Props> = memo(({ data }) => {
   const { workspace } = useParams<{ workspace: string; channel: string }>();
-  const user = data.Sender;
+  // 데이터에 Sender가 있으면 dm에서 보낸 것이고 없으면 채널에서 한 채팅으로 구분한다.
+  const user = 'Sender' in data ? data.Sender : data.User;
 
   // hooks 안에서 개별 값을 캐싱하고 싶다면 useMemo() 활용
 
