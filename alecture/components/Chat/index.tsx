@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 interface Props {
   data: (IDM | IChat);
 }
+const BACK_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:3095' : 'https://sleact.nodebird.com';
 const Chat: VFC<Props> = memo(({ data }) => {
   const { workspace } = useParams<{ workspace: string; channel: string }>();
   // 데이터에 Sender가 있으면 dm에서 보낸 것이고 없으면 채널에서 한 채팅으로 구분한다.
@@ -20,7 +21,12 @@ const Chat: VFC<Props> = memo(({ data }) => {
   // 맨션 문구를 뽑아서 링크로 만들기
   // \d 숫자, +는 1개 이상, ?는 0개나 1개, *이 0개 이상
   // g는 모두찾기 
-  const result = useMemo(() => regexifystring({
+  const result = useMemo(() => 
+  // uploads\\서버주소
+  data.content.startsWith('uploads\\') ? (
+    <img src={`${BACK_URL}/${data.content}`} style={{ maxHeight: 200 }} />
+  ) :
+  (regexifystring({
     input: data.content,
     pattern: /@\[(.+?)]\((\d+?)\)|\n/g,
     decorator(match, index) {
@@ -34,7 +40,7 @@ const Chat: VFC<Props> = memo(({ data }) => {
       }
       return <br key={index} />;
     },
-  }), [workspace, data.content]);
+  })), [workspace, data.content]);
 
   return (
     <ChatWrapper>

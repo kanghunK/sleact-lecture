@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@emotion/babel-plugin": "^11.10.2"
+    "@emotion/babel-plugin": "^11.10.2",
+    "webpack-bundle-analyzer": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/webpack-bundle-analyzer": "^4.6.0"
   }
 }

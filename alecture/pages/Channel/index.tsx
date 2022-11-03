@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Container, Header } from '@pages/Channel/styles';
+import { Container, DragOver, Header } from '@pages/Channel/styles';
 import ChatBox from '@components/ChatBox';
 import ChatList from '@components/ChatList';
 import useInput from '@hooks/useInput';
@@ -38,6 +38,8 @@ const Channel = () => {
 
   const scrollbarRef = useRef<Scrollbars>(null);
   const [showInviteChannelModal, setShowInviteChannelModal] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const dragCounter = useRef(0);
 
   const onSubmitForm = useCallback(
     (e) => {
@@ -75,30 +77,34 @@ const Channel = () => {
     [chat, chatData, myData, channelData, workspace, channel],
   );
 
-  const onMessage = useCallback((data: IChat) => {
-    // 채널이 내 채널과 같고 보내는 id가 내 아이디가 아닌지 확인
-    // 소켓 io가 아닌 optimistic ui를 통해서 값을 넣었기 때문에 소켓 io에서 오는 데이터는 내 아이디를 걸러야한다.
-    if (data.Channel.name === channel && data.UserId !== myData?.id) {
-      mutateChat((chatData) => {
-        chatData?.[0].unshift(data);
-        return chatData;
-      }, false).then(() => {
-        if (scrollbarRef.current) {
-          console.log('확인');
-          // 스크롤바를 150px 미만으로 올렸을 때 챗오면 스크롤바를 밑으로 내리고 그 외에는 무시
-          if (
-            scrollbarRef.current.getScrollHeight() <
-            scrollbarRef.current.getClientHeight() + scrollbarRef.current.getScrollTop() + 150
-          ) {
-            console.log('scrollToBottom!', scrollbarRef.current?.getValues());
-            setTimeout(() => {
-              scrollbarRef.current?.scrollToBottom();
-            }, 50);
+  const onMessage = useCallback(
+    (data: IChat) => {
+      // 채널이 내 채널과 같고 보내는 id가 내 아이디가 아닌지 확인
+      // 소켓 io가 아닌 optimistic ui를 통해서 값을 넣었기 때문에 소켓 io에서 오는 데이터는 내 아이디를 걸러야한다.
+      // 그리고 추가된 내용은 '(data.content.startsWith('uploads\\')'으로 원래 자신이 보낸 게시글은 무시했는데
+      // 여기서 자신이 보낸 이미지는 optimistic ui가 적용되지 않기 때문에 허용해준다.
+      if (data.Channel.name === channel && (data.content.startsWith('uploads\\') || data.UserId !== myData?.id)) {
+        mutateChat((chatData) => {
+          chatData?.[0].unshift(data);
+          return chatData;
+        }, false).then(() => {
+          if (scrollbarRef.current) {
+            // 스크롤바를 150px 미만으로 올렸을 때 챗오면 스크롤바를 밑으로 내리고 그 외에는 무시
+            if (
+              scrollbarRef.current.getScrollHeight() <
+              scrollbarRef.current.getClientHeight() + scrollbarRef.current.getScrollTop() + 150
+            ) {
+              console.log('scrollToBottom!', scrollbarRef.current?.getValues());
+              setTimeout(() => {
+                scrollbarRef.current?.scrollToBottom();
+              }, 50);
+            }
           }
-        }
-      });
-    }
-  }, [channel, myData]);
+        });
+      }
+    },
+    [channel, myData],
+  );
 
   useEffect(() => {
     socket?.on('message', onMessage);
@@ -114,6 +120,11 @@ const Channel = () => {
     }
   }, [chatData]);
 
+  // 다른 위치에서 드래그 했을 경우 업로드 화면 띄우는 것 방지
+  // useEffect(() => {
+  //   setDragOver(false);
+  // }, [])
+
   const onClickInviteChannel = useCallback(() => {
     setShowInviteChannelModal(true);
   }, []);
@@ -122,6 +133,62 @@ const Channel = () => {
     setShowInviteChannelModal(false);
   }, []);
 
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      // console.log(e);
+      dragCounter.current = 0;
+      const formData = new FormData();
+      if (e.dataTransfer.items) {
+        // Use DataTransferItemList interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+          // If dropped items aren't files, reject them
+          if (e.dataTransfer.items[i].kind === 'file') {
+            const file = e.dataTransfer.items[i].getAsFile();
+            console.log(e, '.... file[' + i + '].name = ' + file.name);
+            formData.append('image', file);
+          }
+        }
+      } else {
+        // Use DataTransfer interface to access the file(s)
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          console.log(e, '... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
+          formData.append('image', e.dataTransfer.files[i]);
+        }
+      }
+      axios.post(`/api/workspaces/${workspace}/channels/${channel}/images`, formData).then(() => {
+        setDragOver(false);
+      });
+    },
+    [workspace, channel],
+  );
+
+  const onDragOver = useCallback((e) => {
+    e.preventDefault();
+    // console.log(e);
+    setDragOver(true);
+  }, []);
+
+  const onDragEnter = useCallback((e) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    console.log(e, dragCounter);
+    setDragOver(true);
+  }, []);
+
+  const onDragLeave = useCallback((e) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    console.log(e, dragCounter);
+    if (dragCounter.current == 0) {
+      setDragOver(false);
+    }
+  }, []);
+
+  if (!myData || !myData) {
+    return null;
+  }
+
   if (!myData) {
     return null;
   }
@@ -129,7 +196,7 @@ const Channel = () => {
   const chatSections = makeSection(chatData ? chatData.flat().reverse() : []);
 
   return (
-    <Container>
+    <Container onDrop={onDrop} onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
       <Header>
         <span>#{channel}</span>
         <div className="header-right">
@@ -147,11 +214,12 @@ const Channel = () => {
       </Header>
       <ChatList chatSections={chatSections} ref={scrollbarRef} setSize={setSize} isReachingEnd={isReachingEnd} />
       <ChatBox chat={chat} onSubmitForm={onSubmitForm} onChangeChat={onChangeChat} />
-      <InviteChannelModal   
+      <InviteChannelModal
         show={showInviteChannelModal}
         onCloseModal={onCloseModal}
         setShowInviteChannelModal={setShowInviteChannelModal}
       />
+      {dragOver && <DragOver>업로드!</DragOver>}
     </Container>
   );
 };
